@@ -1,6 +1,8 @@
 import tkinter as tk
-from tkinter import filedialog
+from tkinter import filedialog, messagebox
+
 from filehasher.hashing import calcular_sha256
+
 
 class FileHasherApp:
     """Ventana principal de la aplicación."""
@@ -54,11 +56,21 @@ class FileHasherApp:
     
     def calcular_hash(self) -> None:
         """Calcula el hash del archivo seleccionado."""
+
         ruta = self.entry_archivo.get()
+
+        if not ruta:
+            messagebox.showwarning(
+                "Archivo no seleccionado",
+                "Selecciona un archivo antes de calcular el hash."
+            )
+            return
+
         resultado = calcular_sha256(ruta)
+
         self.entry_hash.delete(0, tk.END)
         self.entry_hash.insert(0, resultado)
-        
+
     def run(self):
         """Inicia el bucle principal de la aplicación."""
         self.root.mainloop()
