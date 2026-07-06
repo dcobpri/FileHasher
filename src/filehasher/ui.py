@@ -1,4 +1,5 @@
 import tkinter as tk
+from tkinter import filedialog
 
 
 class FileHasherApp:
@@ -15,7 +16,40 @@ class FileHasherApp:
 
     def crear_widgets(self):
         """Construye la interfaz gráfica."""
-        pass
+        etiqueta_archivo = tk.Label(self.root, text="Archivo")
+        etiqueta_archivo.grid(row=0, column=0, padx=10, pady=10, sticky="w")
+
+        self.entry_archivo = tk.Entry(self.root, width=50)
+        self.entry_archivo.grid(row=0, column=1, padx=10, pady=10)
+
+        self.boton_examinar = tk.Button(
+            self.root,
+            text="Examinar",
+            command=self.seleccionar_archivo
+        )
+        self.boton_examinar.grid(row=0, column=2, padx=10, pady=10)
+
+        etiqueta_hash = tk.Label(self.root, text="SHA-256")
+        etiqueta_hash.grid(row=1, column=0, padx=10, pady=10, sticky="w")
+
+        self.entry_hash = tk.Entry(self.root, width=70)
+        self.entry_hash.grid(row=1, column=1, columnspan=2, padx=10, pady=10)
+
+        self.boton_calcular = tk.Button(
+            self.root,
+            text="Calcular hash"
+        )
+        self.boton_calcular.grid(row=2, column=1, pady=20)
+
+    def seleccionar_archivo(self) -> None:
+        """Abre un diálogo para seleccionar un archivo."""
+        ruta_archivo = filedialog.askopenfilename(
+            title="Seleccionar archivo"
+        )
+
+        if ruta_archivo:
+            self.entry_archivo.delete(0, tk.END)
+            self.entry_archivo.insert(0, ruta_archivo)
 
     def run(self):
         """Inicia el bucle principal de la aplicación."""
