@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import filedialog, messagebox
 
-from filehasher.hashing import calcular_sha256
+from filehasher.controller import FileHasherController
 
 
 class FileHasherApp:
@@ -10,6 +10,7 @@ class FileHasherApp:
     def __init__(self):
         self.root = tk.Tk()
 
+        self.controller = FileHasherController()
         self.root.title("FileHasher")
 
         self.root.geometry("600x250")
@@ -66,8 +67,7 @@ class FileHasherApp:
             )
             return
 
-        resultado = calcular_sha256(ruta)
-
+        resultado = self.controller.calcular_sha256(ruta)
         self.entry_hash.delete(0, tk.END)
         self.entry_hash.insert(0, resultado)
 
