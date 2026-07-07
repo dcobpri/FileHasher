@@ -14,8 +14,6 @@ def test_sha256(tmp_path: Path) -> None:
 
     resultado = calcular_sha256(str(archivo))
 
-    esperado = (
-        "c3a4a2e49d91f2177113a9adfcb9ef9af9679dc4557a0a3a4602e1bd39a6f481"
-    )
+    esperado = "c3a4a2e49d91f2177113a9adfcb9ef9af9679dc4557a0a3a4602e1bd39a6f481"
 
     assert resultado == esperado

@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import filedialog, messagebox
+from tkinter import ttk
 
 from filehasher.controller import FileHasherController
 
@@ -11,6 +12,7 @@ class FileHasherApp:
         self.root = tk.Tk()
 
         self.controller = FileHasherController()
+        self.algoritmo = tk.StringVar(value="SHA-256")
         self.root.title("FileHasher")
 
         self.root.geometry("600x250")
@@ -26,9 +28,7 @@ class FileHasherApp:
         self.entry_archivo.grid(row=0, column=1, padx=10, pady=10)
 
         self.boton_examinar = tk.Button(
-            self.root,
-            text="Examinar",
-            command=self.seleccionar_archivo
+            self.root, text="Examinar", command=self.seleccionar_archivo
         )
         self.boton_examinar.grid(row=0, column=2, padx=10, pady=10)
 
@@ -38,23 +38,33 @@ class FileHasherApp:
         self.entry_hash = tk.Entry(self.root, width=70)
         self.entry_hash.grid(row=1, column=1, columnspan=2, padx=10, pady=10)
 
-        self.boton_calcular = tk.Button(
+        etiqueta_algoritmo = tk.Label(self.root, text="Algoritmo")
+
+        etiqueta_algoritmo.grid(row=2, column=0, padx=10, pady=10, sticky="w")
+
+        self.combo_algoritmo = ttk.Combobox(
             self.root,
-            text="Calcular hash",
-            command=self.calcular_hash
+            textvariable=self.algoritmo,
+            values=["MD5", "SHA-1", "SHA-256"],
+            state="readonly",
+            width=15,
         )
-        self.boton_calcular.grid(row=2, column=1, pady=20)
+
+        self.combo_algoritmo.grid(row=2, column=1, padx=10, pady=10, sticky="w")
+
+        self.boton_calcular = tk.Button(
+            self.root, text="Calcular hash", command=self.calcular_hash
+        )
+        self.boton_calcular.grid(row=3, column=1, pady=20)
 
     def seleccionar_archivo(self) -> None:
         """Abre un diálogo para seleccionar un archivo."""
-        ruta_archivo = filedialog.askopenfilename(
-            title="Seleccionar archivo"
-        )
+        ruta_archivo = filedialog.askopenfilename(title="Seleccionar archivo")
 
         if ruta_archivo:
             self.entry_archivo.delete(0, tk.END)
             self.entry_archivo.insert(0, ruta_archivo)
-    
+
     def calcular_hash(self) -> None:
         """Calcula el hash del archivo seleccionado."""
 
@@ -63,11 +73,14 @@ class FileHasherApp:
         if not ruta:
             messagebox.showwarning(
                 "Archivo no seleccionado",
-                "Selecciona un archivo antes de calcular el hash."
+                "Selecciona un archivo antes de calcular el hash.",
             )
             return
 
-        resultado = self.controller.calcular_sha256(ruta)
+        resultado = self.controller.calcular_hash(
+            ruta,
+            self.algoritmo.get(),
+        )
         self.entry_hash.delete(0, tk.END)
         self.entry_hash.insert(0, resultado)
 
