@@ -1,3 +1,4 @@
+from pathlib import Path
 import tkinter as tk
 from tkinter import filedialog, messagebox
 from tkinter import ttk
@@ -57,6 +58,18 @@ class FileHasherApp:
         )
         self.boton_calcular.grid(row=3, column=1, pady=20)
 
+        self.boton_copiar = tk.Button(
+            self.root,
+            text="Copiar hash",
+            command=self.copiar_hash,
+        )
+
+        self.boton_copiar.grid(
+            row=4,
+            column=1,
+            pady=10,
+        )
+
     def seleccionar_archivo(self) -> None:
         """Abre un diálogo para seleccionar un archivo."""
         ruta_archivo = filedialog.askopenfilename(title="Seleccionar archivo")
@@ -77,12 +90,36 @@ class FileHasherApp:
             )
             return
 
+        if not Path(ruta).is_file():
+            messagebox.showerror(
+                "Ruta no válida", "La ruta seleccionada no corresponde a un archivo."
+            )
+            return
+
         resultado = self.controller.calcular_hash(
             ruta,
             self.algoritmo.get(),
         )
         self.entry_hash.delete(0, tk.END)
         self.entry_hash.insert(0, resultado)
+
+    def copiar_hash(self) -> None:
+        """Copia el hash al portapapeles."""
+        hash_texto = self.entry_hash.get().strip()
+        metodo_hash = self.algoritmo.get()
+
+        if not hash_texto:
+            messagebox.showwarning(
+                "Hash no disponible",
+                "Calcula primero el hash de un archivo antes de copiarlo.",
+            )
+            return
+
+        self.root.clipboard_clear()
+        self.root.clipboard_append(hash_texto)
+
+        mensaje = f"Hash {metodo_hash} copiado al portapapeles."
+        messagebox.showinfo("Hash copiado", mensaje)
 
     def run(self):
         """Inicia el bucle principal de la aplicación."""
