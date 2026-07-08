@@ -96,12 +96,17 @@ class FileHasherApp:
             )
             return
 
-        resultado = self.controller.calcular_hash(
+        resultado, tiempo = self.controller.calcular_hash(
             ruta,
             self.algoritmo.get(),
         )
         self.entry_hash.delete(0, tk.END)
         self.entry_hash.insert(0, resultado)
+        mensaje = (
+            f"Hash {self.algoritmo.get()} calculado correctamente.\n\n"
+            f"Tiempo empleado: {tiempo:.3f} segundos."
+        )
+        messagebox.showinfo("Hash calculado", mensaje)
 
     def copiar_hash(self) -> None:
         """Copia el hash al portapapeles."""
