@@ -17,14 +17,17 @@ def calcular_hash(ruta_archivo: str, algoritmo: str) -> str:
     """
     Calcula el hash de un archivo usando el algoritmo indicado.
     """
+
     funcion_hash = ALGORITMOS[algoritmo]
+    objeto_hash = funcion_hash()
 
     ruta = Path(ruta_archivo)
 
     with ruta.open("rb") as archivo:
-        contenido = archivo.read()
+        for bloque in iter(lambda: archivo.read(65536), b""):
+            objeto_hash.update(bloque)
 
-    return funcion_hash(contenido).hexdigest()
+    return objeto_hash.hexdigest()
 
 
 def calcular_sha256(ruta_archivo: str) -> str:
