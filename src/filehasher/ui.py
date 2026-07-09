@@ -1,7 +1,10 @@
 from pathlib import Path
+from threading import Thread
+
 import tkinter as tk
 from tkinter import filedialog, messagebox
 from tkinter import ttk
+
 
 from filehasher.controller import FileHasherController
 
@@ -78,6 +81,20 @@ class FileHasherApp:
             self.entry_archivo.delete(0, tk.END)
             self.entry_archivo.insert(0, ruta_archivo)
 
+    def deshabilitar_controles(self) -> None:
+        self.entry_archivo.config(state="disabled")
+        self.boton_calcular.config(state="disabled")
+        self.boton_examinar.config(state="disabled")
+        self.combo_algoritmo.config(state="disabled")
+        self.boton_copiar.config(state="disabled")
+
+    def habilitar_controles(self) -> None:
+        self.entry_archivo.config(state="normal")
+        self.boton_calcular.config(state="normal")
+        self.boton_examinar.config(state="normal")
+        self.combo_algoritmo.config(state="readonly")
+        self.boton_copiar.config(state="normal")
+
     def calcular_hash(self) -> None:
         """Calcula el hash del archivo seleccionado."""
 
@@ -96,16 +113,44 @@ class FileHasherApp:
             )
             return
 
+        algoritmo = self.algoritmo.get()
+
+        self.deshabilitar_controles()
+
+        hilo = Thread(
+            target=self.calcular_hash_worker,
+            args=(ruta, algoritmo),
+        )
+
+        hilo.start()
+
+    def calcular_hash_worker(self, ruta: str, algoritmo: str) -> None:
+        """Calcula el hash en un hilo secundario."""
+
         resultado, tiempo = self.controller.calcular_hash(
             ruta,
-            self.algoritmo.get(),
+            algoritmo,
         )
+
+        self.root.after(
+            0,
+            self.mostrar_resultado,
+            resultado,
+            tiempo,
+        )
+
+    def mostrar_resultado(self, resultado: str, tiempo: float) -> None:
+        """Muestra el resultado del cálculo en la interfaz."""
         self.entry_hash.delete(0, tk.END)
         self.entry_hash.insert(0, resultado)
+
         mensaje = (
             f"Hash {self.algoritmo.get()} calculado correctamente.\n\n"
             f"Tiempo empleado: {tiempo:.3f} segundos."
         )
+
+        self.habilitar_controles()
+
         messagebox.showinfo("Hash calculado", mensaje)
 
     def copiar_hash(self) -> None:
