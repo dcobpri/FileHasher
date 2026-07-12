@@ -5,12 +5,18 @@ Controlador de la aplicación FileHasher.
 from time import perf_counter
 
 from filehasher import hashing
+from filehasher.hashing import ProgresoCallback
 
 
 class FileHasherController:
     """Coordina la lógica de la aplicación."""
 
-    def calcular_hash(self, ruta: str, algoritmo: str) -> tuple[str, float]:
+    def calcular_hash(
+        self,
+        ruta: str,
+        algoritmo: str,
+        progreso: ProgresoCallback | None = None,
+    ) -> tuple[str, float]:
         """
         Calcula el hash de un archivo usando el algoritmo indicado.
 
@@ -21,7 +27,11 @@ class FileHasherController:
         """
         inicio = perf_counter()
 
-        resultado = hashing.calcular_hash(ruta, algoritmo)
+        resultado = hashing.calcular_hash(
+            ruta,
+            algoritmo,
+            progreso,
+        )
 
         fin = perf_counter()
 

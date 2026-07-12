@@ -13,16 +13,29 @@ ALGORITMOS: dict[str, Callable] = {
 }
 TAMANO_BLOQUE = 65536
 
+ProgresoCallback = Callable[[int, int], None]
 
-def calcular_hash(ruta_archivo: str, algoritmo: str) -> str:
-    """
-    Calcula el hash de un archivo usando el algoritmo indicado.
-    """
+
+def calcular_hash(
+    ruta_archivo: str,
+    algoritmo: str,
+    progreso: ProgresoCallback | None = None,
+) -> str:
+    """Calcula el hash de un archivo usando el algoritmo indicado."""
     funcion_hash = ALGORITMOS[algoritmo]
     objeto_hash = funcion_hash()
 
+    ruta = Path(ruta_archivo)
+    bytes_totales = ruta.stat().st_size
+    bytes_procesados = 0
+
     for bloque in leer_bloques(ruta_archivo):
         objeto_hash.update(bloque)
+
+        bytes_procesados += len(bloque)
+
+        if progreso is not None:
+            progreso(bytes_procesados, bytes_totales)
 
     return objeto_hash.hexdigest()
 

@@ -17,9 +17,10 @@ class FileHasherApp:
 
         self.controller = FileHasherController()
         self.algoritmo = tk.StringVar(value="SHA-256")
+        self.progreso = tk.DoubleVar(value=0.0)
         self.root.title("FileHasher")
 
-        self.root.geometry("600x250")
+        self.root.minsize(700, 320)
 
         self.crear_widgets()
 
@@ -56,10 +57,26 @@ class FileHasherApp:
 
         self.combo_algoritmo.grid(row=2, column=1, padx=10, pady=10, sticky="w")
 
+        self.barra_progreso = ttk.Progressbar(
+            self.root,
+            variable=self.progreso,
+            maximum=100,
+            length=400,
+        )
+
+        self.barra_progreso.grid(
+            row=3,
+            column=1,
+            columnspan=2,
+            padx=10,
+            pady=10,
+            sticky="w",
+        )
+
         self.boton_calcular = tk.Button(
             self.root, text="Calcular hash", command=self.calcular_hash
         )
-        self.boton_calcular.grid(row=3, column=1, pady=20)
+        self.boton_calcular.grid(row=4, column=1, pady=20)
 
         self.boton_copiar = tk.Button(
             self.root,
@@ -68,7 +85,7 @@ class FileHasherApp:
         )
 
         self.boton_copiar.grid(
-            row=4,
+            row=5,
             column=1,
             pady=10,
         )
@@ -116,6 +133,7 @@ class FileHasherApp:
         algoritmo = self.algoritmo.get()
 
         self.deshabilitar_controles()
+        self.progreso.set(0.0)
 
         hilo = Thread(
             target=self.calcular_hash_worker,
@@ -130,6 +148,7 @@ class FileHasherApp:
         resultado, tiempo = self.controller.calcular_hash(
             ruta,
             algoritmo,
+            self.notificar_progreso,
         )
 
         self.root.after(
@@ -141,6 +160,8 @@ class FileHasherApp:
 
     def mostrar_resultado(self, resultado: str, tiempo: float) -> None:
         """Muestra el resultado del cálculo en la interfaz."""
+        self.progreso.set(100.0)
+
         self.entry_hash.delete(0, tk.END)
         self.entry_hash.insert(0, resultado)
 
@@ -152,6 +173,25 @@ class FileHasherApp:
         self.habilitar_controles()
 
         messagebox.showinfo("Hash calculado", mensaje)
+
+    def actualizar_progreso(self, procesados: int, totales: int) -> None:
+        """Actualiza la barra de progreso."""
+        if totales == 0:
+            porcentaje = 100.0
+        else:
+            porcentaje = procesados / totales * 100
+
+        self.progreso.set(porcentaje)
+
+    def notificar_progreso(self, procesados: int, totales: int) -> None:
+        """Solicita al hilo principal actualizar el progreso."""
+
+        self.root.after(
+            0,
+            self.actualizar_progreso,
+            procesados,
+            totales,
+        )
 
     def copiar_hash(self) -> None:
         """Copia el hash al portapapeles."""
