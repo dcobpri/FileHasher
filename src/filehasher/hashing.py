@@ -5,6 +5,12 @@ Funciones relacionadas con el cálculo de hashes criptográficos.
 from collections.abc import Callable
 from pathlib import Path
 import hashlib
+from threading import Event
+
+
+class CalculoCanceladoError(Exception):
+    """Indica que el cálculo del hash fue cancelado."""
+
 
 ALGORITMOS: dict[str, Callable] = {
     "MD5": hashlib.md5,
@@ -20,6 +26,7 @@ def calcular_hash(
     ruta_archivo: str,
     algoritmo: str,
     progreso: ProgresoCallback | None = None,
+    evento_cancelacion: Event | None = None,
 ) -> str:
     """Calcula el hash de un archivo usando el algoritmo indicado."""
     funcion_hash = ALGORITMOS[algoritmo]
@@ -30,6 +37,9 @@ def calcular_hash(
     bytes_procesados = 0
 
     for bloque in leer_bloques(ruta_archivo):
+        if evento_cancelacion is not None and evento_cancelacion.is_set():
+            raise CalculoCanceladoError
+
         objeto_hash.update(bloque)
 
         bytes_procesados += len(bloque)

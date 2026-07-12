@@ -1,5 +1,5 @@
 from pathlib import Path
-from threading import Thread
+from threading import Event, Thread
 
 import tkinter as tk
 from tkinter import filedialog, messagebox
@@ -7,6 +7,7 @@ from tkinter import ttk
 
 
 from filehasher.controller import FileHasherController
+from filehasher.hashing import CalculoCanceladoError
 
 
 class FileHasherApp:
@@ -18,6 +19,7 @@ class FileHasherApp:
         self.controller = FileHasherController()
         self.algoritmo = tk.StringVar(value="SHA-256")
         self.progreso = tk.DoubleVar(value=0.0)
+        self.evento_cancelacion = Event()
         self.root.title("FileHasher")
 
         self.root.minsize(700, 320)
@@ -76,7 +78,17 @@ class FileHasherApp:
         self.boton_calcular = tk.Button(
             self.root, text="Calcular hash", command=self.calcular_hash
         )
+
         self.boton_calcular.grid(row=4, column=1, pady=20)
+
+        self.boton_cancelar = tk.Button(
+            self.root,
+            text="Cancelar",
+            command=self.cancelar_calculo,
+            state="disabled",
+        )
+
+        self.boton_cancelar.grid(row=4, column=2, pady=20)
 
         self.boton_copiar = tk.Button(
             self.root,
@@ -104,6 +116,7 @@ class FileHasherApp:
         self.boton_examinar.config(state="disabled")
         self.combo_algoritmo.config(state="disabled")
         self.boton_copiar.config(state="disabled")
+        self.boton_cancelar.config(state="normal")
 
     def habilitar_controles(self) -> None:
         self.entry_archivo.config(state="normal")
@@ -111,6 +124,7 @@ class FileHasherApp:
         self.boton_examinar.config(state="normal")
         self.combo_algoritmo.config(state="readonly")
         self.boton_copiar.config(state="normal")
+        self.boton_cancelar.config(state="disabled")
 
     def calcular_hash(self) -> None:
         """Calcula el hash del archivo seleccionado."""
@@ -132,31 +146,52 @@ class FileHasherApp:
 
         algoritmo = self.algoritmo.get()
 
+        self.entry_hash.delete(0, tk.END)
+        self.progreso.set(0.0)
+
         self.deshabilitar_controles()
         self.progreso.set(0.0)
+        self.evento_cancelacion.clear()
 
         hilo = Thread(
             target=self.calcular_hash_worker,
-            args=(ruta, algoritmo),
+            args=(
+                ruta,
+                algoritmo,
+                self.evento_cancelacion,
+            ),
         )
 
         hilo.start()
 
-    def calcular_hash_worker(self, ruta: str, algoritmo: str) -> None:
+    def calcular_hash_worker(
+        self,
+        ruta: str,
+        algoritmo: str,
+        evento_cancelacion: Event,
+    ) -> None:
         """Calcula el hash en un hilo secundario."""
 
-        resultado, tiempo = self.controller.calcular_hash(
-            ruta,
-            algoritmo,
-            self.notificar_progreso,
-        )
+        try:
+            resultado, tiempo = self.controller.calcular_hash(
+                ruta,
+                algoritmo,
+                self.notificar_progreso,
+                evento_cancelacion,
+            )
 
-        self.root.after(
-            0,
-            self.mostrar_resultado,
-            resultado,
-            tiempo,
-        )
+            self.root.after(
+                0,
+                self.mostrar_resultado,
+                resultado,
+                tiempo,
+            )
+
+        except CalculoCanceladoError:
+            self.root.after(
+                0,
+                self.mostrar_cancelacion,
+            )
 
     def mostrar_resultado(self, resultado: str, tiempo: float) -> None:
         """Muestra el resultado del cálculo en la interfaz."""
@@ -210,6 +245,22 @@ class FileHasherApp:
 
         mensaje = f"Hash {metodo_hash} copiado al portapapeles."
         messagebox.showinfo("Hash copiado", mensaje)
+
+    def mostrar_cancelacion(self) -> None:
+        """Muestra que el cálculo fue cancelado."""
+        self.entry_hash.delete(0, tk.END)
+        self.entry_hash.insert(0, "Cancelado")
+
+        self.habilitar_controles()
+
+        messagebox.showinfo(
+            "Cálculo cancelado",
+            "El cálculo del hash se ha cancelado correctamente.",
+        )
+
+    def cancelar_calculo(self) -> None:
+        """Solicita la cancelación del cálculo."""
+        self.evento_cancelacion.set()
 
     def run(self):
         """Inicia el bucle principal de la aplicación."""

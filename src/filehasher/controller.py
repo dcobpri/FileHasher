@@ -3,6 +3,7 @@ Controlador de la aplicación FileHasher.
 """
 
 from time import perf_counter
+from threading import Event
 
 from filehasher import hashing
 from filehasher.hashing import ProgresoCallback
@@ -16,6 +17,7 @@ class FileHasherController:
         ruta: str,
         algoritmo: str,
         progreso: ProgresoCallback | None = None,
+        evento_cancelacion: Event | None = None,
     ) -> tuple[str, float]:
         """
         Calcula el hash de un archivo usando el algoritmo indicado.
@@ -31,6 +33,7 @@ class FileHasherController:
             ruta,
             algoritmo,
             progreso,
+            evento_cancelacion,
         )
 
         fin = perf_counter()
