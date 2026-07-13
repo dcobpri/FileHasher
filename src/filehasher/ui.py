@@ -22,11 +22,11 @@ class FileHasherApp:
         self.evento_cancelacion = Event()
         self.root.title("FileHasher")
 
-        self.root.minsize(700, 320)
+        self.root.minsize(700, 480)
 
         self.crear_widgets()
 
-    def crear_widgets(self):
+    def crear_widgets(self) -> None:
         """Construye la interfaz gráfica."""
         etiqueta_archivo = tk.Label(self.root, text="Archivo")
         etiqueta_archivo.grid(row=0, column=0, padx=10, pady=10, sticky="w")
@@ -35,19 +35,32 @@ class FileHasherApp:
         self.entry_archivo.grid(row=0, column=1, padx=10, pady=10)
 
         self.boton_examinar = tk.Button(
-            self.root, text="Examinar", command=self.seleccionar_archivo
+            self.root,
+            text="Examinar",
+            command=self.seleccionar_archivo,
         )
         self.boton_examinar.grid(row=0, column=2, padx=10, pady=10)
 
-        etiqueta_hash = tk.Label(self.root, text="SHA-256")
+        etiqueta_hash = tk.Label(self.root, text="Hash calculado")
         etiqueta_hash.grid(row=1, column=0, padx=10, pady=10, sticky="w")
 
         self.entry_hash = tk.Entry(self.root, width=70)
-        self.entry_hash.grid(row=1, column=1, columnspan=2, padx=10, pady=10)
+        self.entry_hash.grid(
+            row=1,
+            column=1,
+            columnspan=2,
+            padx=10,
+            pady=10,
+        )
 
         etiqueta_algoritmo = tk.Label(self.root, text="Algoritmo")
-
-        etiqueta_algoritmo.grid(row=2, column=0, padx=10, pady=10, sticky="w")
+        etiqueta_algoritmo.grid(
+            row=2,
+            column=0,
+            padx=10,
+            pady=10,
+            sticky="w",
+        )
 
         self.combo_algoritmo = ttk.Combobox(
             self.root,
@@ -56,8 +69,62 @@ class FileHasherApp:
             state="readonly",
             width=15,
         )
+        self.combo_algoritmo.grid(
+            row=2,
+            column=1,
+            padx=10,
+            pady=10,
+            sticky="w",
+        )
 
-        self.combo_algoritmo.grid(row=2, column=1, padx=10, pady=10, sticky="w")
+        self.label_hash_esperado = tk.Label(
+            self.root,
+            text="Hash esperado",
+        )
+        self.label_hash_esperado.grid(
+            row=3,
+            column=0,
+            padx=10,
+            pady=10,
+            sticky="w",
+        )
+
+        self.entry_hash_esperado = tk.Entry(
+            self.root,
+            width=70,
+        )
+        self.entry_hash_esperado.grid(
+            row=3,
+            column=1,
+            columnspan=2,
+            padx=10,
+            pady=10,
+        )
+
+        self.boton_verificar = tk.Button(
+            self.root,
+            text="Verificar",
+            command=self.verificar_hash,
+            state="disabled",
+        )
+        self.boton_verificar.grid(
+            row=4,
+            column=1,
+            pady=10,
+        )
+
+        self.label_resultado = tk.Label(
+            self.root,
+            text="",
+        )
+        self.label_resultado.grid(
+            row=5,
+            column=1,
+            columnspan=2,
+            padx=10,
+            pady=5,
+            sticky="w",
+        )
 
         self.barra_progreso = ttk.Progressbar(
             self.root,
@@ -65,9 +132,8 @@ class FileHasherApp:
             maximum=100,
             length=400,
         )
-
         self.barra_progreso.grid(
-            row=3,
+            row=6,
             column=1,
             columnspan=2,
             padx=10,
@@ -76,10 +142,15 @@ class FileHasherApp:
         )
 
         self.boton_calcular = tk.Button(
-            self.root, text="Calcular hash", command=self.calcular_hash
+            self.root,
+            text="Calcular hash",
+            command=self.calcular_hash,
         )
-
-        self.boton_calcular.grid(row=4, column=1, pady=20)
+        self.boton_calcular.grid(
+            row=7,
+            column=1,
+            pady=10,
+        )
 
         self.boton_cancelar = tk.Button(
             self.root,
@@ -87,17 +158,19 @@ class FileHasherApp:
             command=self.cancelar_calculo,
             state="disabled",
         )
-
-        self.boton_cancelar.grid(row=4, column=2, pady=20)
+        self.boton_cancelar.grid(
+            row=7,
+            column=2,
+            pady=10,
+        )
 
         self.boton_copiar = tk.Button(
             self.root,
             text="Copiar hash",
             command=self.copiar_hash,
         )
-
         self.boton_copiar.grid(
-            row=5,
+            row=8,
             column=1,
             pady=10,
         )
@@ -150,8 +223,9 @@ class FileHasherApp:
         self.progreso.set(0.0)
 
         self.deshabilitar_controles()
-        self.progreso.set(0.0)
         self.evento_cancelacion.clear()
+        self.label_resultado.config(text="")
+        self.boton_verificar.config(state="disabled")
 
         hilo = Thread(
             target=self.calcular_hash_worker,
@@ -199,6 +273,7 @@ class FileHasherApp:
 
         self.entry_hash.delete(0, tk.END)
         self.entry_hash.insert(0, resultado)
+        self.boton_verificar.config(state="normal")
 
         mensaje = (
             f"Hash {self.algoritmo.get()} calculado correctamente.\n\n"
@@ -206,7 +281,6 @@ class FileHasherApp:
         )
 
         self.habilitar_controles()
-
         messagebox.showinfo("Hash calculado", mensaje)
 
     def actualizar_progreso(self, procesados: int, totales: int) -> None:
@@ -261,6 +335,41 @@ class FileHasherApp:
     def cancelar_calculo(self) -> None:
         """Solicita la cancelación del cálculo."""
         self.evento_cancelacion.set()
+
+    def verificar_hash(self) -> None:
+        """Verifica si el hash calculado coincide con el esperado."""
+        hash_calculado = self.entry_hash.get().strip()
+        hash_esperado = self.entry_hash_esperado.get().strip()
+
+        if not hash_calculado:
+            messagebox.showwarning(
+                "Hash no disponible",
+                "Calcula primero el hash de un archivo.",
+            )
+            return
+
+        if not hash_esperado:
+            messagebox.showwarning(
+                "Hash esperado vacío",
+                "Introduce el hash esperado antes de verificar.",
+            )
+            return
+
+        coincide = self.controller.verificar_hash(
+            hash_calculado,
+            hash_esperado,
+        )
+
+        if coincide:
+            self.label_resultado.config(
+                text="Coincide",
+                fg="green",
+            )
+        else:
+            self.label_resultado.config(
+                text="No coincide",
+                fg="red",
+            )
 
     def run(self):
         """Inicia el bucle principal de la aplicación."""

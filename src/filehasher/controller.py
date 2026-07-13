@@ -39,3 +39,10 @@ class FileHasherController:
         fin = perf_counter()
 
         return resultado, fin - inicio
+
+    def verificar_hash(self, calculado: str, esperado: str) -> bool:
+        """Comprueba si dos hashes coinciden."""
+        calculado_normalizado = calculado.strip().lower()
+        esperado_normalizado = esperado.strip().lower()
+
+        return calculado_normalizado == esperado_normalizado
