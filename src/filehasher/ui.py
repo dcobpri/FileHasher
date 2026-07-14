@@ -1,10 +1,11 @@
 from pathlib import Path
 from threading import Event, Thread
+from typing import Any, cast
 
 import tkinter as tk
 from tkinter import filedialog, messagebox
 from tkinter import ttk
-
+from tkinterdnd2 import DND_FILES, TkinterDnD
 
 from filehasher.controller import FileHasherController
 from filehasher.hashing import CalculoCanceladoError
@@ -14,17 +15,23 @@ class FileHasherApp:
     """Ventana principal de la aplicación."""
 
     def __init__(self):
-        self.root = tk.Tk()
+        self.root = TkinterDnD.Tk()
 
         self.controller = FileHasherController()
         self.algoritmo = tk.StringVar(value="SHA-256")
         self.progreso = tk.DoubleVar(value=0.0)
         self.evento_cancelacion = Event()
-        self.root.title("FileHasher")
+        self.hilo: Thread | None = None
 
+        self.root.title("FileHasher")
         self.root.minsize(700, 480)
 
         self.crear_widgets()
+
+        self.root.protocol(
+            "WM_DELETE_WINDOW",
+            self.cerrar_aplicacion,
+        )
 
     def crear_widgets(self) -> None:
         """Construye la interfaz gráfica."""
@@ -33,6 +40,15 @@ class FileHasherApp:
 
         self.entry_archivo = tk.Entry(self.root, width=50)
         self.entry_archivo.grid(row=0, column=1, padx=10, pady=10)
+
+        # tkinterdnd2 añade estos métodos dinámicamente a los widgets Tkinter.
+        dnd_entry = cast(Any, self.entry_archivo)
+
+        dnd_entry.drop_target_register(DND_FILES)
+        dnd_entry.dnd_bind(
+            "<<Drop>>",
+            self.procesar_archivo_arrastrado,
+        )
 
         self.boton_examinar = tk.Button(
             self.root,
@@ -183,6 +199,29 @@ class FileHasherApp:
             self.entry_archivo.delete(0, tk.END)
             self.entry_archivo.insert(0, ruta_archivo)
 
+    def procesar_archivo_arrastrado(self, evento) -> None:
+        """Valida e introduce la ruta de un archivo arrastrado."""
+        rutas = self.root.tk.splitlist(evento.data)
+
+        if len(rutas) != 1:
+            messagebox.showwarning(
+                "Selección no válida",
+                "Arrastra un único archivo.",
+            )
+            return
+
+        ruta = Path(rutas[0])
+
+        if not ruta.is_file():
+            messagebox.showwarning(
+                "Selección no válida",
+                "La ruta arrastrada no corresponde a un archivo.",
+            )
+            return
+
+        self.entry_archivo.delete(0, tk.END)
+        self.entry_archivo.insert(0, str(ruta))
+
     def deshabilitar_controles(self) -> None:
         self.entry_archivo.config(state="disabled")
         self.boton_calcular.config(state="disabled")
@@ -227,7 +266,7 @@ class FileHasherApp:
         self.label_resultado.config(text="")
         self.boton_verificar.config(state="disabled")
 
-        hilo = Thread(
+        self.hilo = Thread(
             target=self.calcular_hash_worker,
             args=(
                 ruta,
@@ -236,7 +275,7 @@ class FileHasherApp:
             ),
         )
 
-        hilo.start()
+        self.hilo.start()
 
     def calcular_hash_worker(
         self,
@@ -245,7 +284,6 @@ class FileHasherApp:
         evento_cancelacion: Event,
     ) -> None:
         """Calcula el hash en un hilo secundario."""
-
         try:
             resultado, tiempo = self.controller.calcular_hash(
                 ruta,
@@ -254,6 +292,34 @@ class FileHasherApp:
                 evento_cancelacion,
             )
 
+        except CalculoCanceladoError:
+            self.root.after(0, self.mostrar_cancelacion)
+
+        except FileNotFoundError:
+            self.root.after(
+                0,
+                self.mostrar_error,
+                "Archivo no encontrado",
+                "El archivo ya no existe o fue eliminado durante el cálculo.",
+            )
+
+        except PermissionError:
+            self.root.after(
+                0,
+                self.mostrar_error,
+                "Permiso denegado",
+                "No tienes permisos para leer el archivo seleccionado.",
+            )
+
+        except OSError as error:
+            self.root.after(
+                0,
+                self.mostrar_error,
+                "Error de lectura",
+                f"No se pudo leer el archivo:\n{error}",
+            )
+
+        else:
             self.root.after(
                 0,
                 self.mostrar_resultado,
@@ -261,14 +327,9 @@ class FileHasherApp:
                 tiempo,
             )
 
-        except CalculoCanceladoError:
-            self.root.after(
-                0,
-                self.mostrar_cancelacion,
-            )
-
     def mostrar_resultado(self, resultado: str, tiempo: float) -> None:
         """Muestra el resultado del cálculo en la interfaz."""
+        self.hilo = None
         self.progreso.set(100.0)
 
         self.entry_hash.delete(0, tk.END)
@@ -283,6 +344,16 @@ class FileHasherApp:
         self.habilitar_controles()
         messagebox.showinfo("Hash calculado", mensaje)
 
+    def mostrar_error(self, titulo: str, mensaje: str) -> None:
+        """Muestra un error y restaura la interfaz."""
+        self.hilo = None
+        self.entry_hash.delete(0, tk.END)
+        self.entry_hash.insert(0, "Error")
+
+        self.habilitar_controles()
+
+        messagebox.showerror(titulo, mensaje)
+
     def actualizar_progreso(self, procesados: int, totales: int) -> None:
         """Actualiza la barra de progreso."""
         if totales == 0:
@@ -294,6 +365,8 @@ class FileHasherApp:
 
     def notificar_progreso(self, procesados: int, totales: int) -> None:
         """Solicita al hilo principal actualizar el progreso."""
+        if not self.root.winfo_exists():
+            return
 
         self.root.after(
             0,
@@ -322,6 +395,7 @@ class FileHasherApp:
 
     def mostrar_cancelacion(self) -> None:
         """Muestra que el cálculo fue cancelado."""
+        self.hilo = None
         self.entry_hash.delete(0, tk.END)
         self.entry_hash.insert(0, "Cancelado")
 
@@ -371,6 +445,25 @@ class FileHasherApp:
                 fg="red",
             )
 
-    def run(self):
+    def cerrar_aplicacion(self) -> None:
+        """Cierra la aplicación de forma segura."""
+
+        if self.hilo is not None and self.hilo.is_alive():
+            self.evento_cancelacion.set()
+
+            self.root.after(
+                100,
+                self.cerrar_aplicacion,
+            )
+            return
+
+        self.root.destroy()
+
+    def run(self) -> None:
         """Inicia el bucle principal de la aplicación."""
         self.root.mainloop()
+
+
+class DnDEntry(tk.Entry):
+    def drop_target_register(self, *args): ...
+    def dnd_bind(self, *args): ...
