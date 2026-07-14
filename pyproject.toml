@@ -4,9 +4,12 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "filehasher"
-version = "0.1.0"
-description = "Aplicación de escritorio para calcular hashes de archivos."
+version = "1.0.0"
+description = "Aplicación de escritorio para calcular y verificar hashes de archivos."
 requires-python = ">=3.13"
+dependencies = [
+    "tkinterdnd2",
+]
 
 [tool.setuptools.packages.find]
 where = ["src"]
