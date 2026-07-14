@@ -11,6 +11,15 @@ dependencies = [
     "tkinterdnd2",
 ]
 
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "ruff",
+    "black",
+    "pyright",
+    "Pillow",
+]
+
 [tool.setuptools.packages.find]
 where = ["src"]
 

@@ -24,6 +24,10 @@ class FileHasherApp:
         self.hilo: Thread | None = None
 
         self.root.title("FileHasher")
+
+        self.icono_ventana = tk.PhotoImage(file="assets/icon.png")
+        self.root.iconphoto(True, self.icono_ventana)
+
         self.root.minsize(700, 480)
 
         self.crear_widgets()
