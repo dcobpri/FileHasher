@@ -1,5 +1,10 @@
 # FileHasher
 
+[![Python](https://img.shields.io/badge/Python-3.13-blue)](https://www.python.org/)
+[![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
+[![Release](https://img.shields.io/badge/Release-v1.0.0-orange)](../../releases)
+[![PyInstaller](https://img.shields.io/badge/PyInstaller-ready-blueviolet)](https://pyinstaller.org/)
+
 Aplicación de escritorio para calcular y verificar hashes criptográficos mediante MD5, SHA-1 y SHA-256.
 
 FileHasher es una aplicación de escritorio multiplataforma desarrollada en Python para calcular y verificar hashes criptográficos de archivos de forma rápida, sencilla y segura.
@@ -30,7 +35,17 @@ El desarrollo sigue un flujo de trabajo basado en Git, revisiones incrementales,
 
 ## Capturas
 
-Las capturas de pantalla se añadirán con la publicación de la versión **v1.0.0**.
+### Ventana principal
+
+![Ventana principal](docs/screenshots/01-main-window.png)
+
+### Cálculo de hash
+
+![Progreso](docs/screenshots/02-progress.png)
+
+### Verificación
+
+![Verificación](docs/screenshots/03-verification.png)
 
 ---
 
@@ -136,6 +151,12 @@ FileHasher/
 ## Pruebas
 
 El proyecto incorpora pruebas automatizadas mediante **pytest**.
+
+Ejecutar todas las pruebas:
+
+```bash
+pytest -v
+```
 
 Las pruebas cubren tanto el motor de cálculo de hashes como la lógica de verificación implementada en el controlador.
 

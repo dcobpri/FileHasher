@@ -26,3 +26,12 @@ where = ["src"]
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
+
+[tool.pyright]
+include = ["src", "tests", "scripts"]
+exclude = [
+    "build",
+    "dist",
+    "**/__pycache__",
+    "**/*.egg-info",
+]
