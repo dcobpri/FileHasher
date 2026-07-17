@@ -1,0 +1,61 @@
+name: Build Windows Portable
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v7
+
+      - name: Configurar Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+          cache: "pip"
+
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+          python -m pip install pyinstaller pytest ruff black pyright
+
+      - name: Comprobar calidad
+        run: |
+          ruff check .
+          black --check .
+          pyright
+          pytest -v
+
+      - name: Generar ejecutable portable
+        run: >
+          pyinstaller
+          --clean
+          --noconfirm
+          --onefile
+          --windowed
+          --name FileHasher
+          --icon assets/icon.ico
+          --collect-all tkinterdnd2
+          --add-data "assets;assets"
+          src/filehasher/app.py
+
+      - name: Comprobar ejecutable
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "dist/FileHasher.exe")) {
+            throw "No se ha generado dist/FileHasher.exe"
+          }
+
+      - name: Subir ejecutable
+        uses: actions/upload-artifact@v4
+        with:
+          name: FileHasher-Windows-portable
+          path: dist/FileHasher.exe
+          if-no-files-found: error
